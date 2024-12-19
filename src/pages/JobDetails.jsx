@@ -4,11 +4,12 @@ import { useContext, useEffect, useState } from "react";
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../providers/AuthProvider";
 import toast from "react-hot-toast";
 
 const JobDetails = () => {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [startDate, setStartDate] = useState(new Date());
   const { id } = useParams();
@@ -35,12 +36,13 @@ const JobDetails = () => {
     _id,
     buyer,
   } = job || {};
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
     const price = form.price.value;
     const email = user?.email;
     const comment = form.comment.value;
+    const jobId = _id
     // const deadline = startDate;
 
     // Bid Permission Validation
@@ -53,7 +55,20 @@ const JobDetails = () => {
     // Price Validation
     if (price > max_price) return toast.error("Maximum price crossed..");
 
-    const bidData = { price, email, comment, deadline };
+    const bidData = { price, email, comment, deadline, jobId };
+
+    try {
+      // 1. make a post request
+      await axios.post(`${import.meta.env.VITE_API_URL}/add-bid`, bidData)
+      // 2. Reset form
+      form.reset()
+      // 3. Show toast and navigate
+      toast.success('Bid Added Successfully!!!')
+      navigate('/my-bids')
+    } catch (err) {
+      console.log(err)
+      toast.error(err.message)
+    }
   };
   return (
     <div className="flex flex-col md:flex-row justify-around gap-5  items-center min-h-[calc(100vh-306px)] md:max-w-screen-xl mx-auto ">
@@ -89,7 +104,7 @@ const JobDetails = () => {
               </p>
             </div>
             <div className="rounded-full object-cover overflow-hidden w-14 h-14">
-              <img src={buyer?.photo} alt="" />
+              <img referrerPolicy="no-referrer" src={buyer?.photo} alt="" />
             </div>
           </div>
           <p className="mt-6 text-lg font-bold text-gray-600 ">
